@@ -6,7 +6,7 @@ class ConversationService {
   async createConversation(userId, title) {
     try {
       const result = await runQuery(
-        'INSERT INTO conversations (user_id, title) VALUES (?, ?)',
+        'INSERT INTO conversations (user_id, title) VALUES (?, ?) RETURNING id',
         [userId, title]
       );
       
