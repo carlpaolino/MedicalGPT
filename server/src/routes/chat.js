@@ -3,6 +3,10 @@ const { body, validationResult } = require('express-validator');
 const aiService = require('../services/aiService');
 const conversationService = require('../services/conversationService');
 const logger = require('../utils/logger');
+const multer = require('multer');
+const fs = require('fs');
+const path = require('path');
+const Tesseract = require('tesseract.js');
 
 const router = express.Router();
 
@@ -22,8 +26,23 @@ const validateChatMessage = [
     .withMessage('Stream must be a boolean value')
 ];
 
-// POST /api/chat - Send a message and get AI response
-router.post('/', validateChatMessage, async (req, res) => {
+// Multer setup for file uploads (memory storage, no disk persistence)
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB max
+  fileFilter: (req, file, cb) => {
+    const allowed = ['.txt', '.md', '.pdf', '.jpg', '.jpeg', '.png', '.gif', '.bmp', '.webp'];
+    const ext = path.extname(file.originalname).toLowerCase();
+    if (allowed.includes(ext)) {
+      cb(null, true);
+    } else {
+      cb(new Error('Only .txt, .md, .pdf, and image files (.jpg, .jpeg, .png, .gif, .bmp, .webp) are allowed'));
+    }
+  }
+});
+
+// POST /api/chat - Send a message and get AI response (with optional file)
+router.post('/', upload.single('file'), validateChatMessage, async (req, res) => {
   try {
     // Check for validation errors
     const errors = validationResult(req);
@@ -35,8 +54,46 @@ router.post('/', validateChatMessage, async (req, res) => {
       });
     }
 
-    const { message, conversationId, stream = false } = req.body;
+    let { message, conversationId, stream = false } = req.body;
     const userId = req.user.id;
+
+    // If a file is uploaded, read its content and append to message
+    if (req.file) {
+      const ext = path.extname(req.file.originalname).toLowerCase();
+      let fileText = '';
+      if (ext === '.txt' || ext === '.md') {
+        fileText = req.file.buffer.toString('utf-8');
+      } else if (ext === '.pdf') {
+        // Use pdf-parse to extract text from PDF
+        const pdfParse = require('pdf-parse');
+        try {
+          const data = await pdfParse(req.file.buffer);
+          fileText = data.text;
+        } catch (err) {
+          return res.status(400).json({
+            success: false,
+            message: 'Failed to read PDF file.'
+          });
+        }
+      } else if (['.jpg', '.jpeg', '.png', '.gif', '.bmp', '.webp'].includes(ext)) {
+        // Use OCR to extract text from images
+        try {
+          const result = await Tesseract.recognize(
+            req.file.buffer,
+            'eng',
+            { logger: m => logger.debug(`OCR: ${m.status}`) }
+          );
+          fileText = result.data.text;
+        } catch (err) {
+          logger.error('OCR error:', err);
+          return res.status(400).json({
+            success: false,
+            message: 'Failed to extract text from image.'
+          });
+        }
+      }
+      message += `\n\n[File uploaded: ${req.file.originalname}]\n${fileText}`;
+    }
 
     logger.info(`Chat request from user ${userId}: ${message.substring(0, 100)}...`);
 

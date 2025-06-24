@@ -61,21 +61,23 @@ const ChatPage: React.FC = () => {
     }
   };
 
-  const handleSend = async (input: string) => {
+  const handleSend = async (input: string, file?: File | null) => {
     if (!input.trim()) return;
     setLoading(true);
     setError(null);
     const newMessages = [...messages, { role: 'user' as const, content: input }];
     setMessages(newMessages);
     try {
-      const body = conversationId ? { message: input, conversationId } : { message: input };
+      const formData = new FormData();
+      formData.append('message', input);
+      if (conversationId) formData.append('conversationId', conversationId.toString());
+      if (file) formData.append('file', file);
       const res = await fetch('/api/chat', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
           ...(token ? { 'Authorization': `Bearer ${token}` } : {})
         },
-        body: JSON.stringify(body),
+        body: formData,
       });
       const data = await res.json();
       if (!data.success) throw new Error(data.message || 'Error');
@@ -97,22 +99,60 @@ const ChatPage: React.FC = () => {
     }, 0);
   };
 
+  const handleDeleteConversation = async (id: number) => {
+    if (!token) return;
+    try {
+      await fetch(`/api/conversations/${id}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      setConversations(conversations => conversations.filter(c => c.id !== id));
+      if (conversationId === id) {
+        setMessages([]);
+        setConversationId(null);
+        setError(null);
+      }
+    } catch (err) {
+      // Optionally show an error
+    }
+  };
+
+  const isNewConversation = messages.length === 0;
+
   return (
     <div className="flex h-full w-full min-h-0">
       <Sidebar
         conversations={conversations}
         onNewChat={handleNewChat}
         onSelectConversation={handleSelectConversation}
+        onDeleteConversation={handleDeleteConversation}
         selectedConversationId={conversationId}
       />
-      <main className="flex-1 flex flex-col h-full min-h-0 bg-white dark:bg-blue-950">
-        <div className="flex justify-between items-center px-4 pt-4">
-          <h1 className="text-xl font-bold text-blue-700 dark:text-blue-200">MedGPT Chat</h1>
-        </div>
-        <div className="flex-1 min-h-0 flex flex-col">
-          <ChatWindow messages={messages} loading={loading} error={error} />
-        </div>
-        <PromptBar ref={promptBarRef} onSend={handleSend} disabled={loading} />
+      <main className="flex-1 flex flex-col h-full min-h-0 bg-gradient-to-br from-blue-50 via-white to-blue-100 dark:from-blue-950 dark:via-blue-900 dark:to-blue-950">
+        {isNewConversation ? (
+          <div className="flex flex-1 flex-col items-center justify-center">
+            <h1 className="text-4xl font-extrabold text-blue-700 dark:text-blue-200 mb-10 tracking-tight">MedGPT Chat</h1>
+            <div className="w-full max-w-2xl">
+              <PromptBar ref={promptBarRef} onSend={handleSend} disabled={loading} />
+            </div>
+          </div>
+        ) : (
+          <>
+            <header className="flex items-center justify-between px-8 py-4 bg-white/80 dark:bg-blue-950/80 shadow-sm border-b border-blue-100 dark:border-blue-800 sticky top-0 z-10 rounded-b-xl">
+              <h1 className="text-2xl font-extrabold text-blue-700 dark:text-blue-200 tracking-tight flex items-center gap-2">
+                <span className="inline-block w-2 h-2 bg-blue-500 rounded-full animate-pulse"></span>
+                MedGPT Chat
+              </h1>
+            </header>
+            <div className="flex-1 min-h-0 flex flex-col transition-all duration-300">
+              <ChatWindow messages={messages} loading={loading} error={error} />
+            </div>
+            <PromptBar ref={promptBarRef} onSend={handleSend} disabled={loading} />
+          </>
+        )}
       </main>
     </div>
   );

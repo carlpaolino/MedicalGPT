@@ -1,5 +1,5 @@
 import React from 'react';
-import { Plus } from 'lucide-react';
+import { Plus, Trash2 } from 'lucide-react';
 
 export interface Conversation {
   id: number;
@@ -10,10 +10,11 @@ interface SidebarProps {
   conversations: Conversation[];
   onNewChat: () => void;
   onSelectConversation: (id: number) => void;
+  onDeleteConversation: (id: number) => void;
   selectedConversationId: number | null;
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ conversations, onNewChat, onSelectConversation, selectedConversationId }) => {
+const Sidebar: React.FC<SidebarProps> = ({ conversations, onNewChat, onSelectConversation, onDeleteConversation, selectedConversationId }) => {
   return (
     <aside className="w-64 bg-gradient-to-b from-blue-700 to-red-600 text-white flex flex-col p-4 shadow-lg h-full">
       <div className="flex items-center mb-8">
@@ -32,12 +33,20 @@ const Sidebar: React.FC<SidebarProps> = ({ conversations, onNewChat, onSelectCon
         ) : (
           <ul className="space-y-2">
             {conversations.map((conv) => (
-              <li key={conv.id}>
+              <li key={conv.id} className="group flex items-center">
                 <button
-                  className={`w-full text-left px-3 py-2 rounded transition-colors ${selectedConversationId === conv.id ? 'bg-white text-blue-700 font-bold' : 'hover:bg-blue-800/60'}`}
+                  className={`flex-1 text-left px-3 py-2 rounded transition-colors ${selectedConversationId === conv.id ? 'bg-white text-blue-700 font-bold' : 'hover:bg-blue-800/60'}`}
                   onClick={() => onSelectConversation(conv.id)}
                 >
                   {conv.title || `Conversation #${conv.id}`}
+                </button>
+                <button
+                  className="ml-2 opacity-0 group-hover:opacity-100 transition-opacity text-blue-200 hover:text-red-400"
+                  onClick={() => onDeleteConversation(conv.id)}
+                  aria-label="Delete conversation"
+                  tabIndex={-1}
+                >
+                  <Trash2 size={18} />
                 </button>
               </li>
             ))}
