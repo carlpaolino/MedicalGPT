@@ -45,6 +45,7 @@ router.post('/register', [
     );
 
     // Generate JWT token
+    logger.info('JWT payload about to be signed (register):', { userId: result.id, email: email });
     const token = jwt.sign(
       { userId: result.id, email: email },
       process.env.JWT_SECRET || 'medgpt-secret-key',
@@ -129,6 +130,7 @@ router.post('/login', [
     );
 
     // Generate JWT token
+    logger.info('JWT payload about to be signed (login):', { userId: user.id, email: user.email });
     const token = jwt.sign(
       { userId: user.id, email: user.email },
       process.env.JWT_SECRET || 'medgpt-secret-key',
@@ -238,6 +240,7 @@ router.post('/refresh', async (req, res) => {
     }
 
     // Generate new token
+    logger.info('JWT payload about to be signed (refresh):', { userId: req.user.id, email: req.user.email });
     const token = jwt.sign(
       { userId: req.user.id, email: req.user.email },
       process.env.JWT_SECRET || 'medgpt-secret-key',
