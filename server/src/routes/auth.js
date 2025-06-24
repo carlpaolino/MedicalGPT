@@ -46,7 +46,7 @@ router.post('/register', [
 
     // Generate JWT token
     const token = jwt.sign(
-      { userId: result.id, email },
+      { userId: result.id, email: email },
       process.env.JWT_SECRET || 'medgpt-secret-key',
       { expiresIn: '24h' }
     );
