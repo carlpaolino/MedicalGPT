@@ -17,11 +17,12 @@ const ChatPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const { token } = useAuth();
   const promptBarRef = useRef<PromptBarRef>(null);
+  const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001';
 
   // Fetch conversations on mount or when a new chat is created
   useEffect(() => {
     if (!token) return;
-    fetch('/api/conversations', {
+    fetch(`${API_BASE_URL}/api/conversations`, {
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${token}`
@@ -39,7 +40,7 @@ const ChatPage: React.FC = () => {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`/api/conversations/${id}`, {
+      const res = await fetch(`${API_BASE_URL}/api/conversations/${id}`, {
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
@@ -72,7 +73,7 @@ const ChatPage: React.FC = () => {
       formData.append('message', input);
       if (conversationId) formData.append('conversationId', conversationId.toString());
       if (file) formData.append('file', file);
-      const res = await fetch('/api/chat', {
+      const res = await fetch(`${API_BASE_URL}/api/chat`, {
         method: 'POST',
         headers: {
           ...(token ? { 'Authorization': `Bearer ${token}` } : {})
@@ -102,7 +103,7 @@ const ChatPage: React.FC = () => {
   const handleDeleteConversation = async (id: number) => {
     if (!token) return;
     try {
-      await fetch(`/api/conversations/${id}`, {
+      await fetch(`${API_BASE_URL}/api/conversations/${id}`, {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',

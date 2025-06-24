@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useAuth } from '../App';
 
 interface AuthPageProps {
   onAuth: (token: string) => void;
@@ -11,13 +12,14 @@ const AuthPage: React.FC<AuthPageProps> = ({ onAuth }) => {
   const [name, setName] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001';
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError(null);
     try {
-      const endpoint = isLogin ? '/api/auth/login' : '/api/auth/register';
+      const endpoint = isLogin ? `${API_BASE_URL}/api/auth/login` : `${API_BASE_URL}/api/auth/register`;
       const body = isLogin
         ? { email, password }
         : { email, password, name };

@@ -1,26 +1,22 @@
-const sqlite3 = require('sqlite3').verbose();
-const path = require('path');
+const { runQuery, getRow, getAll, isPostgres } = require('../utils/database');
 const logger = require('../utils/logger');
 
-const dbPath = process.env.DATABASE_URL || path.join(__dirname, '../../medgpt.db');
-
-// Create database connection
-const db = new sqlite3.Database(dbPath, (err) => {
-  if (err) {
-    logger.error('Error opening database:', err.message);
-    process.exit(1);
-  }
-  logger.info('Connected to SQLite database');
-});
-
-// Enable foreign keys
-db.run('PRAGMA foreign_keys = ON');
-
-// Create tables
-const createTables = () => {
-  return new Promise((resolve, reject) => {
+// Create tables with database-agnostic SQL
+const createTables = async () => {
+  try {
     // Users table
-    const createUsersTable = `
+    const createUsersTable = isPostgres ? `
+      CREATE TABLE IF NOT EXISTS users (
+        id SERIAL PRIMARY KEY,
+        email VARCHAR(255) UNIQUE NOT NULL,
+        password_hash TEXT NOT NULL,
+        name VARCHAR(255),
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        last_login TIMESTAMP,
+        is_active BOOLEAN DEFAULT TRUE
+      )
+    ` : `
       CREATE TABLE IF NOT EXISTS users (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         email TEXT UNIQUE NOT NULL,
@@ -34,7 +30,17 @@ const createTables = () => {
     `;
 
     // Conversations table
-    const createConversationsTable = `
+    const createConversationsTable = isPostgres ? `
+      CREATE TABLE IF NOT EXISTS conversations (
+        id SERIAL PRIMARY KEY,
+        user_id INTEGER NOT NULL,
+        title VARCHAR(500),
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        is_archived BOOLEAN DEFAULT FALSE,
+        FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
+      )
+    ` : `
       CREATE TABLE IF NOT EXISTS conversations (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         user_id INTEGER NOT NULL,
@@ -47,7 +53,20 @@ const createTables = () => {
     `;
 
     // Messages table
-    const createMessagesTable = `
+    const createMessagesTable = isPostgres ? `
+      CREATE TABLE IF NOT EXISTS messages (
+        id SERIAL PRIMARY KEY,
+        conversation_id INTEGER NOT NULL,
+        role VARCHAR(20) NOT NULL CHECK (role IN ('user', 'assistant', 'system')),
+        content TEXT NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        tokens_used INTEGER,
+        safety_flags TEXT,
+        citations TEXT,
+        triage_level VARCHAR(50),
+        FOREIGN KEY (conversation_id) REFERENCES conversations (id) ON DELETE CASCADE
+      )
+    ` : `
       CREATE TABLE IF NOT EXISTS messages (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         conversation_id INTEGER NOT NULL,
@@ -63,7 +82,23 @@ const createTables = () => {
     `;
 
     // Safety incidents table
-    const createSafetyIncidentsTable = `
+    const createSafetyIncidentsTable = isPostgres ? `
+      CREATE TABLE IF NOT EXISTS safety_incidents (
+        id SERIAL PRIMARY KEY,
+        user_id INTEGER,
+        conversation_id INTEGER,
+        message_id INTEGER,
+        incident_type VARCHAR(100) NOT NULL,
+        description TEXT,
+        severity VARCHAR(20) CHECK (severity IN ('low', 'medium', 'high', 'critical')),
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        resolved_at TIMESTAMP,
+        resolved_by VARCHAR(255),
+        FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE SET NULL,
+        FOREIGN KEY (conversation_id) REFERENCES conversations (id) ON DELETE SET NULL,
+        FOREIGN KEY (message_id) REFERENCES messages (id) ON DELETE SET NULL
+      )
+    ` : `
       CREATE TABLE IF NOT EXISTS safety_incidents (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         user_id INTEGER,
@@ -82,7 +117,16 @@ const createTables = () => {
     `;
 
     // Analytics table
-    const createAnalyticsTable = `
+    const createAnalyticsTable = isPostgres ? `
+      CREATE TABLE IF NOT EXISTS analytics (
+        id SERIAL PRIMARY KEY,
+        user_id INTEGER,
+        event_type VARCHAR(100) NOT NULL,
+        event_data TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE SET NULL
+      )
+    ` : `
       CREATE TABLE IF NOT EXISTS analytics (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         user_id INTEGER,
@@ -102,30 +146,20 @@ const createTables = () => {
       { name: 'analytics', sql: createAnalyticsTable }
     ];
 
-    let completed = 0;
-    const total = tables.length;
+    for (const table of tables) {
+      await runQuery(table.sql);
+      logger.info(`Created ${table.name} table successfully`);
+    }
 
-    tables.forEach(table => {
-      db.run(table.sql, (err) => {
-        if (err) {
-          logger.error(`Error creating ${table.name} table:`, err.message);
-          reject(err);
-          return;
-        }
-        logger.info(`Created ${table.name} table successfully`);
-        completed++;
-        
-        if (completed === total) {
-          resolve();
-        }
-      });
-    });
-  });
+  } catch (error) {
+    logger.error('Error creating tables:', error);
+    throw error;
+  }
 };
 
 // Create indexes for better performance
-const createIndexes = () => {
-  return new Promise((resolve, reject) => {
+const createIndexes = async () => {
+  try {
     const indexes = [
       'CREATE INDEX IF NOT EXISTS idx_conversations_user_id ON conversations(user_id)',
       'CREATE INDEX IF NOT EXISTS idx_messages_conversation_id ON messages(conversation_id)',
@@ -136,58 +170,45 @@ const createIndexes = () => {
       'CREATE INDEX IF NOT EXISTS idx_analytics_created_at ON analytics(created_at)'
     ];
 
-    let completed = 0;
-    const total = indexes.length;
-
-    indexes.forEach(index => {
-      db.run(index, (err) => {
-        if (err) {
-          logger.error('Error creating index:', err.message);
-          reject(err);
-          return;
-        }
-        completed++;
-        
-        if (completed === total) {
-          resolve();
-        }
-      });
-    });
-  });
+    for (const index of indexes) {
+      await runQuery(index);
+    }
+    
+    logger.info('Indexes created successfully');
+  } catch (error) {
+    logger.error('Error creating indexes:', error);
+    throw error;
+  }
 };
 
 // Initialize database
 const initDatabase = async () => {
   try {
     logger.info('Starting database initialization...');
+    logger.info(`Using ${isPostgres ? 'PostgreSQL' : 'SQLite'} database`);
     
     await createTables();
-    logger.info('Tables created successfully');
-    
     await createIndexes();
-    logger.info('Indexes created successfully');
     
     logger.info('Database initialization completed successfully');
     
-    // Close database connection
-    db.close((err) => {
-      if (err) {
-        logger.error('Error closing database:', err.message);
-      } else {
-        logger.info('Database connection closed');
-      }
-      process.exit(0);
-    });
-    
   } catch (error) {
     logger.error('Database initialization failed:', error);
-    process.exit(1);
+    throw error;
   }
 };
 
 // Run initialization if this file is executed directly
 if (require.main === module) {
-  initDatabase();
+  initDatabase()
+    .then(() => {
+      logger.info('Database initialization completed');
+      process.exit(0);
+    })
+    .catch((error) => {
+      logger.error('Database initialization failed:', error);
+      process.exit(1);
+    });
 }
 
-module.exports = { initDatabase, db }; 
+module.exports = { initDatabase }; 

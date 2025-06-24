@@ -3,6 +3,8 @@ import ChatPage from './pages/ChatPage';
 import AuthPage from './pages/AuthPage';
 import './App.css';
 
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001';
+
 interface AuthContextType {
   token: string | null;
   setToken: (token: string | null) => void;
