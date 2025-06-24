@@ -56,7 +56,7 @@ const MEDICAL_SOURCES = {
 
 class AIService {
   constructor() {
-    this.model = process.env.AI_MODEL || 'gpt-4';
+    this.model = process.env.AI_MODEL || 'gpt-3.5-turbo';
     this.maxTokens = parseInt(process.env.AI_MAX_TOKENS) || 2000;
     this.temperature = parseFloat(process.env.AI_TEMPERATURE) || 0.7;
   }

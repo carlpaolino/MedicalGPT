@@ -1,13 +1,18 @@
 import React, { useState } from 'react';
 import { Send } from 'lucide-react';
 
-const PromptBar: React.FC = () => {
+interface PromptBarProps {
+  onSend: (input: string) => void;
+  disabled?: boolean;
+}
+
+const PromptBar: React.FC<PromptBarProps> = ({ onSend, disabled }) => {
   const [input, setInput] = useState('');
 
   const handleSend = (e: React.FormEvent) => {
     e.preventDefault();
     if (!input.trim()) return;
-    // TODO: Send message to backend
+    onSend(input);
     setInput('');
   };
 
@@ -21,11 +26,12 @@ const PromptBar: React.FC = () => {
         onChange={e => setInput(e.target.value)}
         aria-label="Type your medical question"
         autoFocus
+        disabled={disabled}
       />
       <button
         type="submit"
         className="bg-blue-600 hover:bg-blue-700 text-white rounded-full p-2 transition-colors disabled:opacity-50"
-        disabled={!input.trim()}
+        disabled={!input.trim() || disabled}
         aria-label="Send"
       >
         <Send size={20} />
@@ -34,4 +40,4 @@ const PromptBar: React.FC = () => {
   );
 };
 
-export default PromptBar; 
+export default PromptBar;

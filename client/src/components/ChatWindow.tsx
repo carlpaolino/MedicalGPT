@@ -1,13 +1,13 @@
 import React from 'react';
+import { Message } from '../pages/ChatPage';
 
-const ChatWindow: React.FC = () => {
-  // Placeholder messages
-  const messages = [
-    { role: 'assistant', content: 'Hello! I am MedGPT, your medical AI assistant. How can I help you today?' },
-    { role: 'user', content: 'Why do I have chest pain?' },
-    { role: 'assistant', content: 'Chest pain can have many causes, including muscle strain, anxiety, or heart-related issues. If you experience severe or persistent chest pain, seek emergency care. [1]\n\n**Care Level:** EMERGENCY\n\n[1] Mayo Clinic: https://www.mayoclinic.org/' }
-  ];
+interface ChatWindowProps {
+  messages: Message[];
+  loading?: boolean;
+  error?: string | null;
+}
 
+const ChatWindow: React.FC<ChatWindowProps> = ({ messages, loading, error }) => {
   return (
     <div className="flex-1 overflow-y-auto px-4 py-6 bg-blue-50 dark:bg-blue-900">
       <div className="max-w-2xl mx-auto space-y-6">
@@ -24,9 +24,15 @@ const ChatWindow: React.FC = () => {
             </div>
           </div>
         ))}
+        {loading && (
+          <div className="text-blue-500 text-center">MedGPT is thinking...</div>
+        )}
+        {error && (
+          <div className="text-red-500 text-center">{error}</div>
+        )}
       </div>
     </div>
   );
 };
 
-export default ChatWindow; 
+export default ChatWindow;
