@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { useAuth } from '../App';
 
 interface AuthPageProps {
   onAuth: (token: string) => void;

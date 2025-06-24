@@ -32,7 +32,7 @@ const ChatPage: React.FC = () => {
       .then(data => {
         if (data.success) setConversations(data.data);
       });
-  }, [token, conversationId]);
+  }, [token, conversationId, API_BASE_URL]);
 
   // Load messages for a selected conversation
   const handleSelectConversation = async (id: number) => {
