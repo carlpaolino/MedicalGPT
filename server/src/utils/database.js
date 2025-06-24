@@ -24,7 +24,14 @@ if (isPostgres) {
     }
   });
 
+  // Helper to convert ? placeholders to $1, $2, ... for Postgres
+  function convertPlaceholders(sql) {
+    let i = 0;
+    return sql.replace(/\?/g, () => `$${++i}`);
+  }
+
   runQuery = (sql, params = []) => {
+    sql = convertPlaceholders(sql);
     return pool.query(sql, params)
       .then(result => ({ id: result.rows[0]?.id, changes: result.rowCount }))
       .catch(err => {
@@ -34,6 +41,7 @@ if (isPostgres) {
   };
 
   getRow = (sql, params = []) => {
+    sql = convertPlaceholders(sql);
     return pool.query(sql, params)
       .then(result => result.rows[0])
       .catch(err => {
@@ -43,6 +51,7 @@ if (isPostgres) {
   };
 
   getAll = (sql, params = []) => {
+    sql = convertPlaceholders(sql);
     return pool.query(sql, params)
       .then(result => result.rows)
       .catch(err => {
