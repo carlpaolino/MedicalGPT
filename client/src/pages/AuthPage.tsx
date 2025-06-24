@@ -44,53 +44,58 @@ const AuthPage: React.FC<AuthPageProps> = ({ onAuth }) => {
   };
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-blue-50 dark:bg-blue-900">
-      <form onSubmit={handleSubmit} className="bg-white dark:bg-blue-950 p-8 rounded-lg shadow-md w-full max-w-sm space-y-4">
-        <h2 className="text-2xl font-bold text-blue-700 dark:text-blue-200 mb-2">{isLogin ? 'Login' : 'Sign Up'}</h2>
-        {!isLogin && (
-          <input
-            type="text"
-            placeholder="Name"
-            value={name}
-            onChange={e => setName(e.target.value)}
-            className="w-full px-3 py-2 rounded border border-blue-200 dark:border-blue-800 bg-transparent text-blue-900 dark:text-blue-100"
-            required
-          />
-        )}
-        <input
-          type="email"
-          placeholder="Email"
-          value={email}
-          onChange={e => setEmail(e.target.value)}
-          className="w-full px-3 py-2 rounded border border-blue-200 dark:border-blue-800 bg-transparent text-blue-900 dark:text-blue-100"
-          required
-        />
-        <input
-          type="password"
-          placeholder="Password"
-          value={password}
-          onChange={e => setPassword(e.target.value)}
-          className="w-full px-3 py-2 rounded border border-blue-200 dark:border-blue-800 bg-transparent text-blue-900 dark:text-blue-100"
-          required
-        />
-        {error && <div className="text-red-500 text-center">{error}</div>}
-        <button
-          type="submit"
-          className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded font-semibold disabled:opacity-50"
-          disabled={loading}
-        >
-          {loading ? 'Please wait...' : isLogin ? 'Login' : 'Sign Up'}
-        </button>
-        <div className="text-center mt-2">
-          <button
-            type="button"
-            className="text-blue-500 hover:underline text-sm"
-            onClick={() => setIsLogin(!isLogin)}
-          >
-            {isLogin ? "Don't have an account? Sign Up" : 'Already have an account? Login'}
-          </button>
+    <div className="min-h-screen w-full flex flex-col items-center justify-center bg-gradient-to-br from-blue-600 via-blue-400 to-red-400">
+      <div className="flex flex-col items-center w-full">
+        <h1 className="text-5xl md:text-6xl font-extrabold text-white drop-shadow-lg mt-24 mb-8 text-center select-none" style={{letterSpacing: '0.05em'}}>MedGPT</h1>
+        <div className="bg-white/90 shadow-2xl rounded-2xl px-8 py-10 w-full max-w-md flex flex-col items-center">
+          <h2 className="text-2xl font-bold text-blue-700 mb-4">{isLogin ? 'Login' : 'Sign Up'}</h2>
+          <form onSubmit={handleSubmit} className="w-full space-y-4">
+            {!isLogin && (
+              <input
+                type="text"
+                placeholder="Name"
+                value={name}
+                onChange={e => setName(e.target.value)}
+                className="w-full px-3 py-2 rounded border border-blue-200 bg-white text-blue-900 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                required
+              />
+            )}
+            <input
+              type="email"
+              placeholder="Email"
+              value={email}
+              onChange={e => setEmail(e.target.value)}
+              className="w-full px-3 py-2 rounded border border-blue-200 bg-white text-blue-900 focus:outline-none focus:ring-2 focus:ring-blue-400"
+              required
+            />
+            <input
+              type="password"
+              placeholder="Password"
+              value={password}
+              onChange={e => setPassword(e.target.value)}
+              className="w-full px-3 py-2 rounded border border-blue-200 bg-white text-blue-900 focus:outline-none focus:ring-2 focus:ring-blue-400"
+              required
+            />
+            {error && <div className="text-red-500 text-center">{error}</div>}
+            <button
+              type="submit"
+              className="w-full bg-gradient-to-r from-blue-600 to-red-500 hover:from-blue-700 hover:to-red-600 text-white py-2 rounded font-semibold shadow-md transition disabled:opacity-50"
+              disabled={loading}
+            >
+              {loading ? 'Please wait...' : isLogin ? 'Login' : 'Sign Up'}
+            </button>
+          </form>
+          <div className="text-center mt-4">
+            <button
+              type="button"
+              className="text-blue-600 hover:underline text-sm font-medium"
+              onClick={() => setIsLogin(!isLogin)}
+            >
+              {isLogin ? "Don't have an account? Sign Up" : 'Already have an account? Login'}
+            </button>
+          </div>
         </div>
-      </form>
+      </div>
     </div>
   );
 };
