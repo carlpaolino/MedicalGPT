@@ -40,7 +40,7 @@ router.post('/register', [
 
     // Create user
     const result = await runQuery(
-      'INSERT INTO users (email, password_hash, name) VALUES (?, ?, ?)',
+      'INSERT INTO users (email, password_hash, name) VALUES (?, ?, ?) RETURNING id',
       [email, passwordHash, name || null]
     );
 
