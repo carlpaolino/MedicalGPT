@@ -117,6 +117,15 @@ router.post('/', upload.single('file'), validateChatMessage, async (req, res) =>
       currentConversationId = newConversation.id;
     }
 
+    // Defensive check for conversation ID
+    if (!currentConversationId) {
+      logger.error('No conversation ID found or created');
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to create or retrieve conversation ID.'
+      });
+    }
+
     // Save user message
     await conversationService.addMessage(currentConversationId, 'user', message);
 
