@@ -14,6 +14,6 @@
 
 [[redirects]]
   from = "/api/*"
-  to = "medicalgpt-production-4e88.up.railway.app"
+  to = "https://medicalgpt-production-4e88.up.railway.app"
   status = 200
   force = true 
