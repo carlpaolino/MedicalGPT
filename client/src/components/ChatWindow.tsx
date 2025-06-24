@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { Message } from '../pages/ChatPage';
 
 interface ChatWindowProps {
@@ -8,6 +8,12 @@ interface ChatWindowProps {
 }
 
 const ChatWindow: React.FC<ChatWindowProps> = ({ messages, loading, error }) => {
+  const bottomRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages, loading]);
+
   return (
     <div className="flex-1 overflow-y-auto px-4 py-6 bg-blue-50 dark:bg-blue-900">
       <div className="max-w-2xl mx-auto space-y-6">
@@ -30,6 +36,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ messages, loading, error }) => 
         {error && (
           <div className="text-red-500 text-center">{error}</div>
         )}
+        <div ref={bottomRef} />
       </div>
     </div>
   );

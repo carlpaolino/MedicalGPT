@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import ChatWindow from '../components/ChatWindow';
-import PromptBar from '../components/PromptBar';
+import PromptBar, { PromptBarRef } from '../components/PromptBar';
 import Sidebar, { Conversation } from '../components/Sidebar';
 import { useAuth } from '../App';
 
@@ -16,6 +16,7 @@ const ChatPage: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { token } = useAuth();
+  const promptBarRef = useRef<PromptBarRef>(null);
 
   // Fetch conversations on mount or when a new chat is created
   useEffect(() => {
@@ -91,22 +92,27 @@ const ChatPage: React.FC = () => {
     setMessages([]);
     setConversationId(null);
     setError(null);
+    setTimeout(() => {
+      promptBarRef.current?.focusInput();
+    }, 0);
   };
 
   return (
-    <div className="flex h-full w-full">
+    <div className="flex h-full w-full min-h-0">
       <Sidebar
         conversations={conversations}
         onNewChat={handleNewChat}
         onSelectConversation={handleSelectConversation}
         selectedConversationId={conversationId}
       />
-      <main className="flex-1 flex flex-col bg-white dark:bg-blue-950">
+      <main className="flex-1 flex flex-col h-full min-h-0 bg-white dark:bg-blue-950">
         <div className="flex justify-between items-center px-4 pt-4">
           <h1 className="text-xl font-bold text-blue-700 dark:text-blue-200">MedGPT Chat</h1>
         </div>
-        <ChatWindow messages={messages} loading={loading} error={error} />
-        <PromptBar onSend={handleSend} disabled={loading} />
+        <div className="flex-1 min-h-0 flex flex-col">
+          <ChatWindow messages={messages} loading={loading} error={error} />
+        </div>
+        <PromptBar ref={promptBarRef} onSend={handleSend} disabled={loading} />
       </main>
     </div>
   );
