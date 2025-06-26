@@ -2,7 +2,6 @@ import React, { useState, useEffect, useRef } from 'react';
 import ChatWindow from '../components/ChatWindow';
 import PromptBar, { PromptBarRef } from '../components/PromptBar';
 import Sidebar, { Conversation } from '../components/Sidebar';
-import { useAuth } from '../App';
 
 export interface Message {
   role: 'user' | 'assistant';
@@ -15,35 +14,30 @@ const ChatPage: React.FC = () => {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const { token } = useAuth();
   const promptBarRef = useRef<PromptBarRef>(null);
   const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001';
 
   // Fetch conversations on mount or when a new chat is created
   useEffect(() => {
-    if (!token) return;
     fetch(`${API_BASE_URL}/api/conversations`, {
       headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
+        'Content-Type': 'application/json'
       }
     })
       .then(res => res.json())
       .then(data => {
         if (data.success) setConversations(data.data);
       });
-  }, [token, conversationId, API_BASE_URL]);
+  }, [conversationId, API_BASE_URL]);
 
   // Load messages for a selected conversation
   const handleSelectConversation = async (id: number) => {
-    if (!token) return;
     setLoading(true);
     setError(null);
     try {
       const res = await fetch(`${API_BASE_URL}/api/conversations/${id}`, {
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+          'Content-Type': 'application/json'
         }
       });
       const data = await res.json();
@@ -75,9 +69,6 @@ const ChatPage: React.FC = () => {
       if (file) formData.append('file', file);
       const res = await fetch(`${API_BASE_URL}/api/chat`, {
         method: 'POST',
-        headers: {
-          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
-        },
         body: formData,
       });
       const data = await res.json();
@@ -101,14 +92,9 @@ const ChatPage: React.FC = () => {
   };
 
   const handleDeleteConversation = async (id: number) => {
-    if (!token) return;
     try {
       await fetch(`${API_BASE_URL}/api/conversations/${id}`, {
         method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        }
       });
       setConversations(conversations => conversations.filter(c => c.id !== id));
       if (conversationId === id) {

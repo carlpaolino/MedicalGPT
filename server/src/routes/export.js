@@ -22,10 +22,9 @@ router.post('/pdf', [
     }
 
     const { conversationId, includeMetadata = true } = req.body;
-    const userId = req.user.id;
 
     // Get conversation and verify ownership
-    const conversation = await conversationService.getConversationById(conversationId, userId);
+    const conversation = await conversationService.getConversationById(conversationId, undefined);
     if (!conversation) {
       return res.status(404).json({
         success: false,
@@ -144,7 +143,7 @@ router.post('/pdf', [
     // Finalize PDF
     doc.end();
 
-    logger.info(`PDF export generated for conversation ${conversationId} by user ${userId}`);
+    logger.info(`PDF export generated for conversation ${conversationId}`);
 
   } catch (error) {
     logger.error('Error generating PDF export:', error);
@@ -173,10 +172,9 @@ router.post('/email', [
     }
 
     const { conversationId, email, subject, message } = req.body;
-    const userId = req.user.id;
 
     // Get conversation and verify ownership
-    const conversation = await conversationService.getConversationById(conversationId, userId);
+    const conversation = await conversationService.getConversationById(conversationId, undefined);
     if (!conversation) {
       return res.status(404).json({
         success: false,

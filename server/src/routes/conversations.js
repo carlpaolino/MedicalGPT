@@ -22,10 +22,9 @@ router.get('/', [
     }
 
     const { limit = 50, offset = 0, archived = false } = req.query;
-    const userId = req.user.id;
 
     const conversations = await conversationService.getConversationsByUserId(
-      userId, 
+      undefined, 
       parseInt(limit), 
       parseInt(offset)
     );
@@ -63,10 +62,9 @@ router.get('/recent', [
     }
 
     const { limit = 10 } = req.query;
-    const userId = req.user.id;
 
     const conversations = await conversationService.getRecentConversations(
-      userId, 
+      undefined, 
       parseInt(limit)
     );
 
@@ -101,10 +99,9 @@ router.get('/:id', [
 
     const { id } = req.params;
     const { limit = 100, offset = 0 } = req.query;
-    const userId = req.user.id;
 
     // Get conversation details
-    const conversation = await conversationService.getConversationById(id, userId);
+    const conversation = await conversationService.getConversationById(id, undefined);
     if (!conversation) {
       return res.status(404).json({
         success: false,
@@ -152,9 +149,8 @@ router.put('/:id/title', [
 
     const { id } = req.params;
     const { title } = req.body;
-    const userId = req.user.id;
 
-    await conversationService.updateConversationTitle(id, userId, title);
+    await conversationService.updateConversationTitle(id, undefined, title);
 
     res.json({
       success: true,
@@ -184,9 +180,8 @@ router.put('/:id/archive', [
     }
 
     const { id } = req.params;
-    const userId = req.user.id;
 
-    const result = await conversationService.toggleConversationArchive(id, userId);
+    const result = await conversationService.toggleConversationArchive(id, undefined);
 
     res.json({
       success: true,
@@ -217,9 +212,8 @@ router.delete('/:id', [
     }
 
     const { id } = req.params;
-    const userId = req.user.id;
 
-    await conversationService.deleteConversation(id, userId);
+    await conversationService.deleteConversation(id, undefined);
 
     res.json({
       success: true,
@@ -250,10 +244,9 @@ router.get('/search', [
     }
 
     const { q, limit = 20 } = req.query;
-    const userId = req.user.id;
 
     const conversations = await conversationService.searchConversations(
-      userId, 
+      undefined, 
       q, 
       parseInt(limit)
     );
@@ -274,8 +267,7 @@ router.get('/search', [
 // GET /api/conversations/stats - Get conversation statistics
 router.get('/stats', async (req, res) => {
   try {
-    const userId = req.user.id;
-    const stats = await conversationService.getConversationStats(userId);
+    const stats = await conversationService.getConversationStats(undefined);
 
     res.json({
       success: true,

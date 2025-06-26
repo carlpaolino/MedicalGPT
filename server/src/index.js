@@ -10,14 +10,14 @@ require('dotenv').config();
 
 const logger = require('./utils/logger');
 const errorHandler = require('./middleware/errorHandler');
-const authMiddleware = require('./middleware/auth');
+// const authMiddleware = require('./middleware/auth');
 
 // Import routes
 const chatRoutes = require('./routes/chat');
 const conversationRoutes = require('./routes/conversations');
 const exportRoutes = require('./routes/export');
 const healthRoutes = require('./routes/health');
-const authRoutes = require('./routes/auth');
+// const authRoutes = require('./routes/auth');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -76,10 +76,9 @@ app.use(session({
 }));
 
 // API Routes
-app.use('/api/chat', authMiddleware, chatRoutes);
-app.use('/api/conversations', authMiddleware, conversationRoutes);
-app.use('/api/export', authMiddleware, exportRoutes);
-app.use('/api/auth', authRoutes);
+app.use('/api/chat', chatRoutes);
+app.use('/api/conversations', conversationRoutes);
+app.use('/api/export', exportRoutes);
 app.use('/api/health', healthRoutes);
 
 // Serve static files from React build in production

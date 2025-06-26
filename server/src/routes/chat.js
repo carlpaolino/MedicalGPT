@@ -55,7 +55,6 @@ router.post('/', upload.single('file'), validateChatMessage, async (req, res) =>
     }
 
     let { message, conversationId, stream = false } = req.body;
-    const userId = req.user.id;
 
     // If a file is uploaded, read its content and append to message
     if (req.file) {
@@ -95,7 +94,7 @@ router.post('/', upload.single('file'), validateChatMessage, async (req, res) =>
       message += `\n\n[File uploaded: ${req.file.originalname}]\n${fileText}`;
     }
 
-    logger.info(`Chat request from user ${userId}: ${message.substring(0, 100)}...`);
+    logger.info(`Chat request: ${message.substring(0, 100)}...`);
 
     // Get conversation history if conversationId is provided
     let conversationHistory = [];
@@ -103,7 +102,7 @@ router.post('/', upload.single('file'), validateChatMessage, async (req, res) =>
 
     if (conversationId) {
       // Verify conversation belongs to user
-      const conversation = await conversationService.getConversationById(conversationId, userId);
+      const conversation = await conversationService.getConversationById(conversationId);
       if (!conversation) {
         return res.status(404).json({
           success: false,
@@ -113,7 +112,7 @@ router.post('/', upload.single('file'), validateChatMessage, async (req, res) =>
       conversationHistory = await conversationService.getConversationMessages(conversationId);
     } else {
       // Create new conversation
-      const newConversation = await conversationService.createConversation(userId, message.substring(0, 50));
+      const newConversation = await conversationService.createConversation(message.substring(0, 50));
       currentConversationId = newConversation.id;
     }
 
@@ -189,7 +188,7 @@ router.post('/', upload.single('file'), validateChatMessage, async (req, res) =>
       );
 
       // Log analytics
-      logger.info(`Chat response generated for user ${userId}, tokens: ${aiResponse.tokensUsed}, triage: ${aiResponse.triageLevel}`);
+      logger.info(`Chat response generated, tokens: ${aiResponse.tokensUsed}, triage: ${aiResponse.triageLevel}`);
 
       res.json({
         success: true,
@@ -260,10 +259,9 @@ router.post('/feedback', [
     }
 
     const { messageId, rating, feedback } = req.body;
-    const userId = req.user.id;
 
     // Save feedback (implementation would depend on your feedback storage)
-    logger.info(`Feedback submitted for message ${messageId} by user ${userId}: ${rating}/5`);
+    logger.info(`Feedback submitted for message ${messageId}: ${rating}/5`);
 
     res.json({
       success: true,

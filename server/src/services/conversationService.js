@@ -3,18 +3,15 @@ const logger = require('../utils/logger');
 
 class ConversationService {
   // Create a new conversation
-  async createConversation(userId, title) {
+  async createConversation(title) {
     try {
       const result = await runQuery(
-        'INSERT INTO conversations (user_id, title) VALUES (?, ?) RETURNING id',
-        [userId, title]
+        'INSERT INTO conversations (title) VALUES (?) RETURNING id',
+        [title]
       );
-      
-      logger.info(`Created conversation ${result.id} for user ${userId}`);
-      
+      logger.info(`Created conversation ${result.id}`);
       return {
         id: result.id,
-        userId,
         title,
         createdAt: new Date().toISOString()
       };
@@ -24,14 +21,13 @@ class ConversationService {
     }
   }
 
-  // Get conversation by ID (with user verification)
-  async getConversationById(conversationId, userId) {
+  // Get conversation by ID
+  async getConversationById(conversationId) {
     try {
       const conversation = await getRow(
-        'SELECT * FROM conversations WHERE id = ? AND user_id = ?',
-        [conversationId, userId]
+        'SELECT * FROM conversations WHERE id = ?',
+        [conversationId]
       );
-      
       return conversation;
     } catch (error) {
       logger.error('Error getting conversation:', error);
@@ -39,8 +35,8 @@ class ConversationService {
     }
   }
 
-  // Get all conversations for a user
-  async getConversationsByUserId(userId, limit = 50, offset = 0) {
+  // Get all conversations
+  async getAllConversations(limit = 50, offset = 0) {
     try {
       const conversations = await getAll(
         `SELECT 
@@ -52,13 +48,11 @@ class ConversationService {
           COUNT(m.id) as message_count
         FROM conversations c
         LEFT JOIN messages m ON c.id = m.conversation_id
-        WHERE c.user_id = ?
         GROUP BY c.id
         ORDER BY c.updated_at DESC
         LIMIT ? OFFSET ?`,
-        [userId, limit, offset]
+        [limit, offset]
       );
-      
       return conversations;
     } catch (error) {
       logger.error('Error getting conversations:', error);
@@ -134,19 +128,16 @@ class ConversationService {
   }
 
   // Update conversation title
-  async updateConversationTitle(conversationId, userId, title) {
+  async updateConversationTitle(conversationId, title) {
     try {
       const result = await runQuery(
-        'UPDATE conversations SET title = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND user_id = ?',
-        [title, conversationId, userId]
+        'UPDATE conversations SET title = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
+        [title, conversationId]
       );
-      
       if (result.changes === 0) {
-        throw new Error('Conversation not found or access denied');
+        throw new Error('Conversation not found');
       }
-      
       logger.info(`Updated conversation ${conversationId} title to: ${title}`);
-      
       return { success: true };
     } catch (error) {
       logger.error('Error updating conversation title:', error);
@@ -155,26 +146,19 @@ class ConversationService {
   }
 
   // Archive/unarchive conversation
-  async toggleConversationArchive(conversationId, userId) {
+  async toggleConversationArchive(conversationId) {
     try {
-      const conversation = await this.getConversationById(conversationId, userId);
+      const conversation = await this.getConversationById(conversationId);
       if (!conversation) {
         throw new Error('Conversation not found');
       }
-      
       const newArchiveStatus = !conversation.is_archived;
-      
       const result = await runQuery(
-        'UPDATE conversations SET is_archived = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND user_id = ?',
-        [newArchiveStatus ? 1 : 0, conversationId, userId]
+        'UPDATE conversations SET is_archived = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
+        [newArchiveStatus ? 1 : 0, conversationId]
       );
-      
       logger.info(`Toggled archive status for conversation ${conversationId} to: ${newArchiveStatus}`);
-      
-      return { 
-        success: true, 
-        isArchived: newArchiveStatus 
-      };
+      return { success: true, isArchived: newArchiveStatus };
     } catch (error) {
       logger.error('Error toggling conversation archive:', error);
       throw error;
@@ -182,19 +166,16 @@ class ConversationService {
   }
 
   // Delete conversation (soft delete by archiving)
-  async deleteConversation(conversationId, userId) {
+  async deleteConversation(conversationId) {
     try {
       const result = await runQuery(
-        'UPDATE conversations SET is_archived = 1, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND user_id = ?',
-        [conversationId, userId]
+        'UPDATE conversations SET is_archived = 1, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
+        [conversationId]
       );
-      
       if (result.changes === 0) {
-        throw new Error('Conversation not found or access denied');
+        throw new Error('Conversation not found');
       }
-      
-      logger.info(`Soft deleted conversation ${conversationId} for user ${userId}`);
-      
+      logger.info(`Soft deleted conversation ${conversationId}`);
       return { success: true };
     } catch (error) {
       logger.error('Error deleting conversation:', error);
@@ -203,7 +184,7 @@ class ConversationService {
   }
 
   // Get conversation statistics
-  async getConversationStats(userId) {
+  async getConversationStats() {
     try {
       const stats = await getRow(
         `SELECT 
@@ -211,11 +192,8 @@ class ConversationService {
           COUNT(CASE WHEN is_archived = 0 THEN 1 END) as active_conversations,
           COUNT(CASE WHEN is_archived = 1 THEN 1 END) as archived_conversations,
           MAX(updated_at) as last_activity
-        FROM conversations 
-        WHERE user_id = ?`,
-        [userId]
+        FROM conversations`
       );
-      
       return stats;
     } catch (error) {
       logger.error('Error getting conversation stats:', error);
@@ -224,7 +202,7 @@ class ConversationService {
   }
 
   // Search conversations
-  async searchConversations(userId, query, limit = 20) {
+  async searchConversations(query, limit = 20) {
     try {
       const conversations = await getAll(
         `SELECT DISTINCT
@@ -235,13 +213,11 @@ class ConversationService {
           c.is_archived
         FROM conversations c
         JOIN messages m ON c.id = m.conversation_id
-        WHERE c.user_id = ? 
-        AND (c.title LIKE ? OR m.content LIKE ?)
+        WHERE (c.title LIKE ? OR m.content LIKE ?)
         ORDER BY c.updated_at DESC
         LIMIT ?`,
-        [userId, `%${query}%`, `%${query}%`, limit]
+        [`%${query}%`, `%${query}%`, limit]
       );
-      
       return conversations;
     } catch (error) {
       logger.error('Error searching conversations:', error);
@@ -250,7 +226,7 @@ class ConversationService {
   }
 
   // Get recent conversations for sidebar
-  async getRecentConversations(userId, limit = 10) {
+  async getRecentConversations(limit = 10) {
     try {
       const conversations = await getAll(
         `SELECT 
@@ -266,12 +242,11 @@ class ConversationService {
           ORDER BY created_at DESC 
           LIMIT 1
         )
-        WHERE c.user_id = ? AND c.is_archived = 0
+        WHERE c.is_archived = 0
         ORDER BY c.updated_at DESC
         LIMIT ?`,
-        [userId, limit]
+        [limit]
       );
-      
       return conversations;
     } catch (error) {
       logger.error('Error getting recent conversations:', error);
