@@ -1,9 +1,45 @@
 /* Basic styling for MedGPT App */
-body {
-  font-family: 'Inter', Arial, sans-serif;
-  background: #f8fafc;
+body, html, #root {
+  height: 100%;
   margin: 0;
   padding: 0;
+}
+
+#root {
+  min-height: 100vh;
+  min-width: 100vw;
+  height: 100vh;
+  width: 100vw;
+  background: linear-gradient(135deg, #2563eb 0%, #ef4444 100%);
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+}
+
+/* Ensure the main app container fills the screen and is transparent to show the gradient */
+.app-main-container {
+  min-height: 100vh;
+  min-width: 100vw;
+  background: transparent;
+  display: flex;
+  flex-direction: row;
+}
+
+/* Make the chat bar stick to the bottom and stretch full width */
+.prompt-bar-container {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: 100vw;
+  background: rgba(255,255,255,0.85);
+  z-index: 100;
+  box-shadow: 0 -2px 8px rgba(0,0,0,0.05);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+/* Optional: Make sure chat window leaves space for the prompt bar */
+.chat-window-content {
+  padding-bottom: 80px; /* adjust if your prompt bar is taller */
 }
 
 .app-container {
